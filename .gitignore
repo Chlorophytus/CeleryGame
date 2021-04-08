@@ -100,3 +100,5 @@ CTestTestfile.cmake
 _deps
 
 ### Vendor
+celerygame
+celerygame_cfg.hpp
