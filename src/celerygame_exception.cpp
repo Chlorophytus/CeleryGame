@@ -14,5 +14,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "../include/celerygame_exception.hpp"
-using namespace celerygame::exception;
+using namespace celerygame;
 /* vim: set ts=2 sw=2 et: */

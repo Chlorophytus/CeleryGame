@@ -20,10 +20,12 @@ namespace runloop {
 /// Stub task for time triggered run loop
 class task {
 protected:
-  bool shall_quit = false; /**< Set to true then the next tick quits */
+  bool shall_quit =
+      false; /**< Set to true then the next tick deletes this task */
 public:
-  bool should_quit() const;
-  virtual void perform(); /**< Performs the task */
+  bool should_quit() const; /**< Will this task be deleted? */
+  virtual void perform();   /**< Performs the task */
+  virtual ~task();
 };
 
 /// A data structure for storing time-triggered tasks (runs per loop cycle)

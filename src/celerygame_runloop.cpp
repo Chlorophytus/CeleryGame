@@ -19,10 +19,10 @@ using namespace celerygame;
 
 static auto all_tasks = std::unique_ptr<runloop::tasks_t>{nullptr};
 
+/// Stub for task deletion calls.
+runloop::task::~task() {}
+
 void runloop::task::perform() {
-  console::log(console::priority::debug,
-               "Goat task. If you mean to do an actual task then remove your "
-               "call to parent.\n");
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_QUIT) {
@@ -46,16 +46,16 @@ bool runloop::tick() {
 
   auto has_no_tasks = all_tasks->empty();
   if (has_no_tasks) {
-    console::log(console::priority::notice, "No tasks left to perform.\n");
+    console::log(console::priority::informational,
+                 "No tasks left to perform.\n");
     return false;
   }
 
+  // has to be over here, preempt to suppress UB
+  all_tasks->remove_if([](auto &&task) { return task->should_quit(); });
+
   for (auto &&task : *all_tasks) {
-    if (!task->should_quit()) {
-      task->perform();
-    } else {
-      return false;
-    }
+    task->perform();
   }
 
   return true;

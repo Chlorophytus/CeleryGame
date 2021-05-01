@@ -15,6 +15,7 @@
 // limitations under the License.
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
@@ -22,6 +23,7 @@
 #include <ctime>
 #include <exception>
 #include <forward_list>
+#include <functional>
 #include <initializer_list>
 #include <iomanip>
 #include <lua.hpp>

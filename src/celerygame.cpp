@@ -14,8 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "../include/celerygame.hpp"
+#include "../include/celerygame_cfg.hpp"
 #include "../include/celerygame_console.hpp"
 #include "../include/celerygame_runloop.hpp"
+#include "../include/celerygame_sdl2.hpp"
 int main(int argc, const char **argv) {
   SDL_Init(SDL_INIT_EVERYTHING);
   celerygame::console::init();
@@ -23,12 +25,13 @@ int main(int argc, const char **argv) {
   celerygame::console::listeners()->emplace_back(
       new celerygame::console::terminal_listener{});
 
+  celerygame::console::log(celerygame::console::priority::notice, "Celerygame ",
+                           celerygame_VSTRING_FULL, "\n");
+
   celerygame::runloop::init();
 
-  celerygame::runloop::tasks()->emplace_front(new celerygame::runloop::task{});
-
-  celerygame::console::log(celerygame::console::priority::informational,
-                           "Hello world!\n");
+  celerygame::runloop::tasks()->emplace_front(
+      new celerygame::sdl2::window_task("Celerygame", 1280, 720, true));
 
   while (celerygame::runloop::tick())
     SDL_Delay(10);
