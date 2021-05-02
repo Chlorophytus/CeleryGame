@@ -65,6 +65,40 @@ debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
   return VK_FALSE;
 }
 
+/// Get a listing of all physical Vulkan devices
+const std::vector<VkPhysicalDevice> &sdl2::window_task::get_physical_devices() const {
+  return physical_devices;
+}
+
+/// Set the Vulkan device. Returns false if not capable of rendering.
+bool sdl2::window_task::set_physical_device(VkPhysicalDevice &device_ref) {
+  auto queue_family_count = U32{0};
+  vkGetPhysicalDeviceQueueFamilyProperties(device_ref, &queue_family_count, nullptr);
+
+  auto queue_families = std::vector<VkQueueFamilyProperties>{};
+  queue_families.resize(queue_family_count);
+  vkGetPhysicalDeviceQueueFamilyProperties(device_ref, &queue_family_count, queue_families.data());
+
+  console::log(console::priority::debug, "Got device queue families, partitioning them...\n");
+
+  auto true_queue_families_offset = std::stable_partition(queue_families.begin(), queue_families.end(), [](const VkQueueFamilyProperties &queue_family){
+    return (queue_family.queueCount > 0) && ((queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0);
+  });
+  
+  console::log(console::priority::debug, "Partitioned into ", std::distance(queue_families.begin(), true_queue_families_offset), " good queue families and ", std::distance(true_queue_families_offset, queue_families.end()), " bogus ones.\n");
+
+  device_properties = VkPhysicalDeviceProperties{};
+  vkGetPhysicalDeviceProperties(device_ref, &device_properties);
+
+  if(true_queue_families_offset == queue_families.begin()) {
+    console::log(console::priority::notice, "Can't use Vulkan device '", device_properties.deviceName, "' because it does not have necessary queue type(s)\n");
+    return false;
+  }
+
+  console::log(console::priority::notice, "Using Vulkan device '", device_properties.deviceName, "'\n");
+  return true;
+}
+
 /// Check for Vulkan validation layer support
 bool sdl2::window_task::is_validation_capable() const {
   auto layer_count = U32{0};
@@ -130,6 +164,7 @@ sdl2::window_task::window_task(const std::string &title, U16 w, U16 h, bool f) {
   if (layers_enable_validation) {
     console::log(console::priority::informational,
                  "Enabling Vulkan debug facilities\n");
+    assert(is_validation_capable());
     extension_names.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     extension_count++;
   }
@@ -140,7 +175,7 @@ sdl2::window_task::window_task(const std::string &title, U16 w, U16 h, bool f) {
   creator.enabledExtensionCount = extension_count;
   creator.ppEnabledExtensionNames = extension_names.data();
 
-  // Vulkan layers and instance
+  // Vulkan layers
   if (layers_enable_validation) {
     creator.enabledLayerCount = static_cast<U32>(layers_validation.size());
     creator.ppEnabledLayerNames = layers_validation.data();
@@ -164,21 +199,35 @@ sdl2::window_task::window_task(const std::string &title, U16 w, U16 h, bool f) {
   } else {
     creator.enabledLayerCount = 0;
   }
+
+  // Instance creation
   assert(vkCreateInstance(&creator, nullptr, &instance) == VK_SUCCESS);
 
+  // Vulkan debug messenger creation
   if (layers_enable_validation) {
+    // Vulkan function pointer
     auto createDebugUtilsMessengerEXT =
         reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
             vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
     assert(createDebugUtilsMessengerEXT != nullptr);
     createDebugUtilsMessengerEXT(instance, &debug_creator, nullptr, &debug);
   }
+
+  /// Lazily enumerate Vulkan physical devices
+  auto physical_device_count = U32{0};
+  vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
+  physical_devices.resize(physical_device_count);
+  vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()) ;
+
+  assert(set_physical_device(*physical_devices.begin()));
+
   console::log(console::priority::debug, "Created a window.\n");
 }
 
 /// Deletes the Vulkan window and its layers/instance/etc.
 sdl2::window_task::~window_task() {
   if (layers_enable_validation) {
+    // Vulkan function pointer
     auto destroyDebugUtilsMessengerEXT =
         reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
             vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
@@ -191,5 +240,4 @@ sdl2::window_task::~window_task() {
 
   console::log(console::priority::debug, "Destroyed a window.\n");
 }
-
 /* vim: set ts=2 sw=2 et: */

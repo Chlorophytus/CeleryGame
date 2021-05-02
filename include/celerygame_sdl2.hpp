@@ -18,6 +18,11 @@
 #include "celerygame_runloop.hpp"
 namespace celerygame {
 namespace sdl2 {
+/// Holds Vulkan queue family indices for the window
+struct window_queue_indices {
+  std::optional<U32> graphics_family;
+};
+
 /// An SDL2 Vulkan window with a task to handle its events
 class window_task : public runloop::task {
   SDL_Window *window = nullptr;
@@ -28,11 +33,17 @@ class window_task : public runloop::task {
   VkDebugUtilsMessengerEXT debug;
   VkDebugUtilsMessengerCreateInfoEXT debug_creator;
 
+  std::vector<VkPhysicalDevice> physical_devices{};
+  VkPhysicalDeviceProperties device_properties;
+
   U16 width;
   U16 height;
   bool fullscreen;
 
 public:
+  const std::vector<VkPhysicalDevice> &get_physical_devices() const;
+  bool set_physical_device(VkPhysicalDevice & /**< [in] the device reference */);
+
   bool is_validation_capable() const;
   void perform() override;
 

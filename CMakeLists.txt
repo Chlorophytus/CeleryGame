@@ -1,7 +1,7 @@
 # Minimum CMake version is 3.16
 cmake_minimum_required(VERSION 3.16)
 # We are at v0.4.0
-project(celerygame VERSION 0.4.0.3)
+project(celerygame VERSION 0.4.0.4)
 # Configure the project header(s)
 configure_file(include/${PROJECT_NAME}_cfg.in
 	${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}_cfg.hpp
