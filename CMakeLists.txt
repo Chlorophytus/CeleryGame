@@ -1,7 +1,7 @@
 # Minimum CMake version is 3.16
 cmake_minimum_required(VERSION 3.16)
 # We are at v0.4.0
-project(celerygame VERSION 0.4.0.4)
+project(celerygame VERSION 0.4.0.5)
 # Configure the project header(s)
 configure_file(include/${PROJECT_NAME}_cfg.in
 	${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}_cfg.hpp
@@ -19,9 +19,8 @@ find_package(Doxygen)
 # Add target
 add_executable(${PROJECT_NAME}
 	src/${PROJECT_NAME}_console.cpp
-	src/${PROJECT_NAME}_exception.cpp
 	src/${PROJECT_NAME}_runloop.cpp
-	src/${PROJECT_NAME}_sdl2.cpp
+	src/${PROJECT_NAME}_vulkan.cpp
 	src/${PROJECT_NAME}.cpp
 )
 # Generate docs

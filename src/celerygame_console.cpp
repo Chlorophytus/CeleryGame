@@ -30,7 +30,7 @@ void console::terminal_listener::prelude(
   auto now_ti = std::chrono::system_clock::to_time_t(now);
   // Has to be stored in a fancyfied buffer
   char now_buf[64]{0x00};
-  std::strftime(now_buf, sizeof(S8) * 63, "%T", std::localtime(&now_ti));
+  std::strftime(now_buf, sizeof(char) * 63, "%T", std::localtime(&now_ti));
   // Milliseconds are good to have
   auto milli = std::chrono::duration_cast<std::chrono::milliseconds>(
                    now.time_since_epoch())

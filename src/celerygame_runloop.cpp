@@ -42,8 +42,11 @@ void runloop::init() {
 runloop::tasks_t *const runloop::tasks() { return all_tasks.get(); }
 
 bool runloop::tick() {
-  assert(all_tasks != nullptr);
-
+  if (all_tasks == nullptr) {
+    throw std::runtime_error{
+        "Tasks must exist. Did you mean to init the tasks infrastructure "
+        "beforehand?"};
+  }
   auto has_no_tasks = all_tasks->empty();
   if (has_no_tasks) {
     console::log(console::priority::informational,

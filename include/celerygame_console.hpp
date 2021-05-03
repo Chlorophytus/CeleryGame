@@ -160,7 +160,9 @@ template <class... Ts>
 void log(priority p /**< [in] The severity of the line to log */,
          Ts... more /**< [in] A parameter pack containing the line's parts */) {
   auto listeners_listing = listeners();
-  assert(listeners_listing != nullptr);
+  if (listeners_listing == nullptr) {
+    throw std::runtime_error{"Listeners should exist."};
+  }
   for (auto &&listener : *listeners_listing) {
     listener->log(p, more...);
   }

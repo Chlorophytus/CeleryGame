@@ -1,4 +1,4 @@
-// Celerygame include for exception handling
+// Celerygame Vulkan singleton window management
 //
 // Copyright 2021 Roland Metivier <metivier.roland@chlorophyt.us>
 //
@@ -13,12 +13,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#pragma once
-#include "celerygame.hpp"
-namespace celerygame {
-namespace exception {
-/// Thrown upon entering an unrecoverable runtime assertion.
-class runtime_assertion_failed : public std::runtime_error {};
-} // namespace exception
-} // namespace celerygame
+#include "../include/celerygame_vulkan.hpp"
+using namespace celerygame;
+
+void vulkan::init() {}
+
+void vulkan::deinit() {}
 /* vim: set ts=2 sw=2 et: */

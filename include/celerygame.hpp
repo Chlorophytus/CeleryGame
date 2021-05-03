@@ -20,6 +20,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <exception>
 #include <forward_list>
@@ -28,7 +29,7 @@
 #include <iomanip>
 #include <lua.hpp>
 #include <memory>
-#include <optional>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
