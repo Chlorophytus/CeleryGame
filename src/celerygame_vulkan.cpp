@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include "../include/celerygame_vulkan.hpp"
+#include "../include/celerygame_vulkan_device.hpp"
 #include "../include/celerygame_cfg.hpp"
 using namespace celerygame;
 
@@ -21,6 +22,7 @@ static auto instance = std::unique_ptr<VkInstance>{nullptr};
 static SDL_Window *window = nullptr;
 static auto debug_messenger =
     std::unique_ptr<VkDebugUtilsMessengerEXT>{nullptr};
+static auto physical_devices = std::unique_ptr<std::vector<vulkan::device::physical_device>>{nullptr};
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -168,6 +170,7 @@ void vulkan::init(
       extensions_passed.emplace_back(extension_required);
     }
   }
+
 #if 0
   if (!std::all_of(extensions_passed.cbegin(), extensions_passed.cend(),
                    [&extensions_enumerated](const char *extension_passed) {
@@ -228,6 +231,22 @@ void vulkan::init(
             "vkCreateDebugUtilsMessengerEXT");
     vkCreateDebugUtilsMessengerEXT(*instance.get(), &debug_messenger_create,
                                    nullptr, debug_messenger.get());
+  }
+
+  // Make physical devices
+  console::log(console::priority::debug, "Enumerating Vulkan devices...\n");
+  auto raw_devices = std::vector<VkPhysicalDevice>{};
+
+  auto raw_device_count = U32{0};
+  vkEnumeratePhysicalDevices(*instance.get(), &raw_device_count, nullptr);
+
+  raw_devices.resize(raw_device_count);
+  vkEnumeratePhysicalDevices(*instance.get(), &raw_device_count, raw_devices.data());
+
+  physical_devices = std::make_unique<std::vector<vulkan::device::physical_device>>();
+
+  for(auto &&raw_device : raw_devices) {
+    physical_devices->emplace_back(std::move(raw_device));
   }
 }
 

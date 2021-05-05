@@ -124,6 +124,7 @@ protected:
   }
 
 public:
+  /// Log an entry for this terminal listener
   template <class... Ts>
   void
   log(priority p, /**< [in] The severity of the line to log */

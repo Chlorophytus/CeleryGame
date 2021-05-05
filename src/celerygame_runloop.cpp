@@ -26,13 +26,13 @@ void runloop::task::perform() {
   SDL_Event event;
   while (SDL_PollEvent(&event)) {
     if (event.type == SDL_QUIT) {
-      shall_quit = true;
+      _shall_quit = true;
       return;
     }
   }
 }
 
-bool runloop::task::should_quit() const { return shall_quit; }
+bool runloop::task::should_quit() const { return _shall_quit; }
 
 void runloop::init() {
   console::log(console::priority::notice, "Starting run loop.\n");

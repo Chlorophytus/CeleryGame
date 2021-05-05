@@ -20,7 +20,7 @@ namespace runloop {
 /// Stub task for time triggered run loop
 class task {
 protected:
-  bool shall_quit =
+  bool _shall_quit =
       false; /**< Set to true then the next tick deletes this task */
 public:
   bool should_quit() const; /**< Will this task be deleted? */
