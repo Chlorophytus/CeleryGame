@@ -102,3 +102,4 @@ _deps
 ### Vendor
 celerygame
 celerygame_cfg.hpp
+.vscode

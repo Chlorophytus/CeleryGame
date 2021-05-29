@@ -4,10 +4,10 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = celerygame
-PROJECT_NUMBER         = 0.4.0.6
+PROJECT_NUMBER         = 0.4.0.7
 PROJECT_BRIEF          = 
 PROJECT_LOGO           = 
-OUTPUT_DIRECTORY       = /home/accelshark/ReposLocal/CeleryGame
+OUTPUT_DIRECTORY       = /home/accelshark/Documents/CeleryGame
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
@@ -124,6 +124,10 @@ REFERENCES_LINK_SOURCE = YES
 SOURCE_TOOLTIPS        = YES
 USE_HTAGS              = NO
 VERBATIM_HEADERS       = YES
+CLANG_ASSISTED_PARSING = NO
+CLANG_ADD_INC_PATHS    = YES
+CLANG_OPTIONS          = 
+CLANG_DATABASE_PATH    = 
 ALPHABETICAL_INDEX     = YES
 IGNORE_PREFIX          = 
 GENERATE_HTML          = YES

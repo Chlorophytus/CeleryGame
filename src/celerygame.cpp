@@ -28,19 +28,28 @@ int main(int argc, const char **argv) {
   celerygame::console::log(celerygame::console::priority::notice, "Celerygame ",
                            celerygame_VSTRING_FULL, "\n");
 
-  celerygame::runloop::init();
+  auto status = EXIT_FAILURE;
+  try {
+    celerygame::runloop::init();
+    celerygame::runloop::tasks()->emplace_front(new celerygame::runloop::task);
+    celerygame::vulkan::init("whatever", VK_MAKE_API_VERSION(0, 0, 1, 0), {},
+                             {}, 1280, 720, false, true);
+    celerygame::vulkan::try_use_device(0, {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, {},
+                                       true);
 
-  celerygame::runloop::tasks()->emplace_front(new celerygame::runloop::task);
-
-  celerygame::vulkan::init("whatever", VK_MAKE_API_VERSION(0, 0, 1, 0), {}, {}, 640, 480, false, true);
-
-  while (celerygame::runloop::tick())
-    SDL_Delay(10);
+    while (celerygame::runloop::tick()) {
+      SDL_Delay(10);
+    }
+    status = EXIT_SUCCESS;
+  } catch (const std::exception &e) {
+    celerygame::console::log(celerygame::console::priority::alert,
+                             "Fatal error: ", e.what(), "\n");
+  }
 
   celerygame::vulkan::deinit();
   celerygame::runloop::deinit();
   celerygame::console::deinit();
   SDL_Quit();
-  return EXIT_SUCCESS;
+  return status;
 }
 /* vim: set ts=2 sw=2 et: */

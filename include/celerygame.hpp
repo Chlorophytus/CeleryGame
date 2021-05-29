@@ -16,6 +16,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
+#include <bitset>
 #include <cassert>
 #include <chrono>
 #include <cstdio>
@@ -28,8 +29,10 @@
 #include <initializer_list>
 #include <iomanip>
 #include <lua.hpp>
+#include <map>
 #include <memory>
 #include <numeric>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
