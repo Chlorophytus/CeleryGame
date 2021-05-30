@@ -20,6 +20,7 @@ using namespace celerygame;
 static auto instance = std::unique_ptr<VkInstance>{nullptr};
 static SDL_Window *window = nullptr;
 static VkSurfaceKHR surface;
+static auto surface_size = std::unique_ptr<VkExtent2D>{nullptr};
 
 static auto debug_messenger =
     std::unique_ptr<VkDebugUtilsMessengerEXT>{nullptr};
@@ -29,6 +30,14 @@ static auto physical_devices =
 
 static auto logical_device =
     std::unique_ptr<vulkan::device::logical_device>{nullptr};
+
+// Swap chains are an extension. They are not so in the monolithic codebase.
+static auto swap_config =
+    std::unique_ptr<vulkan::device::swap_chain_config>{nullptr};
+static auto swap_chain = std::unique_ptr<VkSwapchainKHR>{nullptr};
+
+static auto images = std::unique_ptr<std::vector<VkImage>>{nullptr};
+static auto image_views = std::unique_ptr<std::vector<VkImageView>>{nullptr};
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -82,10 +91,50 @@ VkSurfaceKHR *const vulkan::get_surface() /**< [out] The Vulkan surface */ {
   return &surface;
 }
 
+VkSwapchainKHR *const
+vulkan::get_swap_chain() /**< [out] The Vulkan swapchain */ {
+  if (swap_chain == nullptr) {
+    console::log(
+        console::priority::warning,
+        "The Vulkan swapchain is currently null. Are you sure you want "
+        "to do this?\n");
+  }
+  return swap_chain.get();
+}
+
+std::vector<VkImage> *const
+vulkan::get_images() /**< [out] The Vulkan images */ {
+  if (images == nullptr) {
+    console::log(console::priority::warning,
+                 "The Vulkan images are currently null. Are you sure you want "
+                 "to do this?\n");
+  }
+  return images.get();
+}
+
+std::vector<VkImageView> *const
+vulkan::get_image_views() /**< [out] The Vulkan image views */ {
+  if (image_views == nullptr) {
+    console::log(
+        console::priority::warning,
+        "The Vulkan imageviews are currently null. Are you sure you want "
+        "to do this?\n");
+  }
+  return image_views.get();
+}
+
 vulkan::device::logical_device::logical_device(
     VkDevice &&reference
     /**< [in] reference to the logical device that this resource represents */)
     : _reference{reference} {}
+
+const VkDevice &vulkan::device::logical_device::get_device() const {
+  return _reference;
+}
+
+vulkan::device::logical_device::~logical_device() {
+  vkDestroyDevice(_reference, nullptr);
+}
 
 vulkan::device::physical_device::physical_device(
     VkPhysicalDevice &&reference
@@ -102,12 +151,69 @@ vulkan::device::physical_device::physical_device(
   vkGetPhysicalDeviceProperties(_reference, &_properties);
   vkGetPhysicalDeviceFeatures(_reference, &_features);
 
-  console::log(console::priority::debug, "Enumerated Vulkan device '",
+  console::log(console::priority::debug,
+               "Getting potential surface capabilities of device '",
                _properties.deviceName, "'\n");
-}
 
-vulkan::device::logical_device::~logical_device() {
-  vkDestroyDevice(_reference, nullptr);
+  // surface capabilities, might be invalid.
+  VkSurfaceCapabilitiesKHR possibly_invalid_caps;
+
+  if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+          _reference, surface, &possibly_invalid_caps) != VK_SUCCESS) {
+    console::log(console::priority::warning,
+                 "Unable to get surface capabilities of device '",
+                 _properties.deviceName, "', is it not a GPU?\n");
+  } else {
+    console::log(console::priority::informational,
+                 "Got surface capabilities of device '", _properties.deviceName,
+                 "'.\n");
+    _surface_capabilities = possibly_invalid_caps;
+  }
+
+  auto modes_count = U32{0};
+  if (vkGetPhysicalDeviceSurfacePresentModesKHR(
+          _reference, surface, &modes_count, nullptr) == VK_SUCCESS) {
+    _presentation_modes.resize(modes_count);
+    if (vkGetPhysicalDeviceSurfacePresentModesKHR(
+            _reference, surface, &modes_count, _presentation_modes.data()) ==
+        VK_SUCCESS) {
+      console::log(console::priority::informational,
+                   "Got presentation modes of device '", _properties.deviceName,
+                   "'.\n");
+    } else {
+      console::log(console::priority::warning,
+                   "Unable to get presentation modes data of device '",
+                   _properties.deviceName, "'.\n");
+    }
+  } else {
+    console::log(console::priority::warning,
+                 "Unable to get presentation mode count of device '",
+                 _properties.deviceName, "', is it not a GPU?\n");
+  }
+
+  auto formats_count = U32{0};
+  if (vkGetPhysicalDeviceSurfaceFormatsKHR(_reference, surface, &formats_count,
+                                           nullptr) == VK_SUCCESS) {
+    _surface_formats.resize(formats_count);
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(
+            _reference, surface, &formats_count, _surface_formats.data()) ==
+        VK_SUCCESS) {
+      console::log(console::priority::informational,
+                   "Got surface formats of device '", _properties.deviceName,
+                   "'.\n");
+    } else {
+      console::log(console::priority::warning,
+                   "Unable to get surface formats data of device '",
+                   _properties.deviceName, "'.\n");
+    }
+  } else {
+    console::log(console::priority::warning,
+                 "Unable to get surface format count of device '",
+                 _properties.deviceName, "', is it not a GPU?\n");
+  }
+
+  console::log(console::priority::notice, "Enumerated Vulkan device '",
+               _properties.deviceName, "'\n");
 }
 
 const std::vector<VkQueueFamilyProperties> &
@@ -132,6 +238,25 @@ vulkan::device::physical_device::get_features() /**< [out] all features of
   return _features;
 }
 
+const std::optional<VkSurfaceCapabilitiesKHR> &vulkan::device::physical_device::
+    get_surface_capabilities() /**< [out] potential surface capabilities */
+    const {
+  return _surface_capabilities;
+}
+
+const std::vector<VkPresentModeKHR> &vulkan::device::physical_device::
+    get_presentation_modes() /**< [out] potential presentation modes */
+    const {
+  return _presentation_modes;
+}
+
+const std::vector<VkSurfaceFormatKHR> &
+vulkan::device::physical_device::get_surface_formats() /**< [out] potential
+                                                          surface formats */
+    const {
+  return _surface_formats;
+}
+
 const VkPhysicalDevice &
 vulkan::device::physical_device::get_device() /**< [out] the device */
     const {
@@ -143,6 +268,22 @@ std::string vulkan::stringify_version_info(
   return std::string{"v"} + std::to_string(VK_API_VERSION_MAJOR(version)) +
          "." + std::to_string(VK_API_VERSION_MINOR(version)) + "." +
          std::to_string(VK_API_VERSION_PATCH(version));
+}
+
+void vulkan::device::swap_chain_config::use_globally() const {
+  if (swap_config == nullptr) {
+    swap_config = std::make_unique<vulkan::device::swap_chain_config>();
+
+    swap_config->format = format;
+    swap_config->color_space = color_space;
+    swap_config->present_mode = present_mode;
+
+    console::log(console::priority::informational,
+                 "Swapchain config has been globally set\n");
+  } else {
+    console::log(console::priority::warning,
+                 "Swapchain config already set, refusing to set again...\n");
+  }
 }
 
 void vulkan::init(
@@ -283,6 +424,8 @@ void vulkan::init(
     throw std::runtime_error{"Can't create Vulkan surface."};
   }
 
+  surface_size = std::make_unique<VkExtent2D>(VkExtent2D{width, height});
+
   // Make physical devices
   console::log(console::priority::debug, "Enumerating Vulkan devices...\n");
   auto raw_devices = std::vector<VkPhysicalDevice>{};
@@ -301,7 +444,7 @@ void vulkan::init(
     physical_devices->emplace_back(std::move(raw_device));
   }
 
-  console::log(console::priority::informational, "Engine is started.\n");
+  console::log(console::priority::notice, "Engine is started.\n");
 }
 
 std::vector<vulkan::device::physical_device> *const
@@ -414,7 +557,7 @@ bool vulkan::try_use_device(
     }
   }
 
-  // HACK: assume the devices are the same.
+  // HACK: assume the queues are the same.
   auto queues = std::vector<U16>{};
   std::set_intersection(graphics_queues.begin(), graphics_queues.end(),
                         presentation_queues.begin(), presentation_queues.end(),
@@ -432,6 +575,7 @@ bool vulkan::try_use_device(
     auto &&queue_info_priorities = std::vector<F32>{1.0f};
     queue_info.pQueuePriorities = queue_info_priorities.data();
     queue_info.pNext = nullptr;
+    queue_info.flags = 0;
 
     VkDeviceCreateInfo device_info;
     device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -444,14 +588,160 @@ bool vulkan::try_use_device(
     device_info.ppEnabledExtensionNames = wanted_extensions.data();
     device_info.pNext = nullptr;
     device_info.pEnabledFeatures = nullptr;
+    device_info.flags = 0;
 
-    vkCreateDevice(device_ref, &device_info, nullptr, &logical_device_temp);
+    if (vkCreateDevice(device_ref, &device_info, nullptr,
+                       &logical_device_temp) == VK_SUCCESS) {
+      console::log(console::priority::notice, "Using Vulkan device '",
+                   device_properties.deviceName, "'.\n");
+      logical_device = std::make_unique<vulkan::device::logical_device>(
+          std::move(logical_device_temp));
 
-    console::log(console::priority::notice, "Using Vulkan device '",
-                 device_properties.deviceName, "'.\n");
-    logical_device = std::make_unique<vulkan::device::logical_device>(
-        std::move(logical_device_temp));
-    return true;
+      const auto &surface_capabilities = device.get_surface_capabilities();
+      if (surface_capabilities.has_value()) {
+        auto extent = VkExtent2D{};
+
+        if (surface_capabilities->currentExtent.width !=
+            std::numeric_limits<U32>::max()) {
+          // no need to pick a resolution
+          extent = surface_capabilities->currentExtent;
+        } else {
+          // have to clamp
+          extent.width = glm::clamp(surface_size->width,
+                                    surface_capabilities->minImageExtent.width,
+                                    surface_capabilities->maxImageExtent.width);
+          extent.height = glm::clamp(
+              surface_size->height, surface_capabilities->minImageExtent.height,
+              surface_capabilities->maxImageExtent.height);
+        }
+
+        console::log(console::priority::informational, "Using ", extent.width,
+                     "x", extent.height, " swap extent.\n");
+
+        auto image_count = surface_capabilities->minImageCount + 1;
+        if (surface_capabilities->maxImageCount > 0 &&
+            image_count > surface_capabilities->maxImageCount) {
+          image_count = surface_capabilities->maxImageCount;
+        }
+
+        console::log(console::priority::informational, "Using ", image_count,
+                     " swap images.\n");
+
+        auto formats = device.get_surface_formats();
+        auto present_modes = device.get_presentation_modes();
+        auto attrs_support = std::bitset<3>{false};
+        for (auto &&format : formats) {
+          if (format.format == swap_config->format) {
+            attrs_support.set(0);
+          }
+          if (format.colorSpace == swap_config->color_space) {
+            attrs_support.set(1);
+          }
+        }
+        for (auto &&present_mode : present_modes) {
+          if (present_mode == swap_config->present_mode) {
+            attrs_support.set(2);
+          }
+        }
+
+        console::log(console::priority::informational,
+                     "swapchain constraint format: ", attrs_support[0], "\n");
+        console::log(console::priority::informational,
+                     "swapchain constraint colorspace: ", attrs_support[1],
+                     "\n");
+        console::log(console::priority::informational,
+                     "swapchain constraint presentmode: ", attrs_support[2],
+                     "\n");
+
+        if (attrs_support.all()) {
+          VkSwapchainKHR swap_chain_temp;
+          // TODO: separate queues support (presentation and graphics)...
+          VkSwapchainCreateInfoKHR swap_info{};
+          swap_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+          swap_info.surface = surface;
+          swap_info.minImageCount = image_count;
+          swap_info.imageExtent = extent;
+          swap_info.imageArrayLayers = 1;
+          swap_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+          swap_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+          swap_info.imageFormat = swap_config->format;
+          swap_info.imageColorSpace = swap_config->color_space;
+          swap_info.preTransform = surface_capabilities->currentTransform;
+          swap_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+          swap_info.presentMode = swap_config->present_mode;
+          swap_info.clipped = VK_TRUE;
+          swap_info.oldSwapchain = VK_NULL_HANDLE;
+
+          if (vkCreateSwapchainKHR(logical_device->get_device(), &swap_info,
+                                   nullptr, &swap_chain_temp) == VK_SUCCESS) {
+            swap_chain =
+                std::make_unique<VkSwapchainKHR>(std::move(swap_chain_temp));
+            console::log(console::priority::informational,
+                         "Created a swapchain.\n");
+
+            auto real_image_count = U32{0};
+            images = std::make_unique<std::vector<VkImage>>();
+            vkGetSwapchainImagesKHR(logical_device->get_device(),
+                                    *swap_chain.get(), &real_image_count,
+                                    nullptr);
+            console::log(console::priority::informational,
+                         "Implementation wants ", real_image_count,
+                         " images\n");
+            images->resize(real_image_count);
+            vkGetSwapchainImagesKHR(logical_device->get_device(),
+                                    *swap_chain.get(), &real_image_count,
+                                    images->data());
+            auto image_failed = false;
+            image_views = std::make_unique<std::vector<VkImageView>>();
+            image_views->resize(images->size());
+            auto iter = U32{0};
+            for (auto &&image : *images) {
+              VkImageViewCreateInfo image_info{};
+              image_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+              image_info.image = image;
+              image_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+              image_info.format = swap_config->format;
+              image_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+              image_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+              image_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+              image_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+              image_info.subresourceRange.aspectMask =
+                  VK_IMAGE_ASPECT_COLOR_BIT;
+              image_info.subresourceRange.baseArrayLayer = 0;
+              image_info.subresourceRange.baseMipLevel = 0;
+              image_info.subresourceRange.levelCount = 1;
+              image_info.subresourceRange.baseArrayLayer = 0;
+              image_info.subresourceRange.layerCount = 1;
+              console::log(console::priority::debug,
+                            "Creating image ", iter, "\n");
+              if (vkCreateImageView(logical_device->get_device(), &image_info,
+                                    nullptr,
+                                    &image_views->at(iter)) != VK_SUCCESS) {
+                console::log(console::priority::warning,
+                             "Failed to create image view ", iter, "\n");
+                image_failed = true;
+              }
+              iter++;
+            }
+            if (!image_failed) {
+              console::log(console::priority::informational,
+                           "Successfully created all image views.\n");
+              return true;
+            }
+          } else {
+            console::log(console::priority::warning,
+                         "Failed to create a swapchain and images.\n");
+          }
+        } else {
+          console::log(
+              console::priority::warning,
+              "Device swapchain constraints selected are incompatible.\n");
+        }
+      } else {
+        console::log(console::priority::warning,
+                     "Device doesn't have valid surface capabilities.\n");
+      }
+    }
   }
 
   // Our assumption was incorrect.
@@ -470,7 +760,19 @@ void vulkan::deinit() {
   if (window == nullptr) {
     throw std::runtime_error{"Can't destroy Vulkan window twice."};
   }
-  
+  if (image_views != nullptr) {
+    for (auto &&image_view : *image_views) {
+      vkDestroyImageView(logical_device->get_device(), image_view, nullptr);
+    }
+    image_views = nullptr;
+  }
+
+  if (swap_chain != nullptr) {
+    vkDestroySwapchainKHR(logical_device->get_device(), *swap_chain.get(),
+                          nullptr);
+    swap_chain = nullptr;
+  }
+
   logical_device = nullptr;
   vkDestroySurfaceKHR(*instance.get(), surface, nullptr);
 
@@ -487,4 +789,5 @@ void vulkan::deinit() {
 
   instance = nullptr;
 }
+
 /* vim: set ts=2 sw=2 et: */

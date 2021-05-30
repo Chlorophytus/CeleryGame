@@ -17,10 +17,12 @@
 using namespace celerygame;
 
 static auto all_listeners = std::unique_ptr<console::listeners_t>{nullptr};
+static auto current_priority = console::priority::debug;
 
-void console::terminal_listener::prelude(
-    std::string &str /**< [in] string to log */,
-    console::priority p /**< [in] the severity of the line to output */) {
+void console::set_priority(priority p) { current_priority = p; }
+console::priority console::get_priority() { return current_priority; }
+
+std::string common_prelude(console::priority p) {
   // Formatter for string outputs
   auto formatter = std::stringstream{};
   formatter << "[";
@@ -76,12 +78,39 @@ void console::terminal_listener::prelude(
     break;
   }
   }
-  str += formatter.str();
+  return formatter.str();
+}
+
+void console::terminal_listener::prelude(
+    std::string &str /**< [in] string to log */,
+    console::priority p /**< [in] the severity of the line to output */) {
+  str += common_prelude(p);
 }
 
 void console::terminal_listener::finalize(std::string &str) {
-  std::fprintf(stderr, str.c_str());
+  std::fprintf(stderr, "%s", str.c_str());
 }
+
+console::file_listener::file_listener(
+    std::filesystem::path
+        &&file_path /**< [in] the path to the log file to write */)
+    : _file{std::fopen(file_path.c_str(), "w")} {
+  if (_file == nullptr) {
+    throw std::runtime_error{"Couldn't open log file for write."};
+  }
+}
+
+void console::file_listener::prelude(
+    std::string &str /**< [in] string to log */,
+    console::priority p /**< [in] the severity of the line to output */) {
+  str += common_prelude(p);
+}
+
+void console::file_listener::finalize(std::string &str) {
+  std::fprintf(_file, "%s", str.c_str());
+}
+
+console::file_listener::~file_listener() { std::fclose(_file); }
 
 void console::init() {
   all_listeners = std::make_unique<console::listeners_t>();

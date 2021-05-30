@@ -4,7 +4,7 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = celerygame
-PROJECT_NUMBER         = 0.4.0.7
+PROJECT_NUMBER         = 0.4.0.8
 PROJECT_BRIEF          = 
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = /home/accelshark/Documents/CeleryGame

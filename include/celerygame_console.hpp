@@ -144,6 +144,17 @@ public:
   void finalize(std::string &);
 };
 
+/// A listener that logs to a file
+class file_listener : public listener {
+  FILE *_file;
+public:
+  file_listener(std::filesystem::path &&);
+  ~file_listener();
+
+  void prelude(std::string &, priority);
+  void finalize(std::string &);
+};
+
 /// A data structure for storing all the console listeners currently used
 using listeners_t = std::vector<std::unique_ptr<listener>>;
 
@@ -156,10 +167,19 @@ void deinit();
 /// Get a listing of all active console listeners
 listeners_t *const listeners();
 
+/// Set the maximum priority to log
+void set_priority(priority);
+
+/// Get the current priority
+priority get_priority();
+
 /// Log to all active console listeners
 template <class... Ts>
 void log(priority p /**< [in] The severity of the line to log */,
          Ts... more /**< [in] A parameter pack containing the line's parts */) {
+  if(static_cast<U8>(get_priority()) < static_cast<U8>(p)) {
+    return;
+  }
   auto listeners_listing = listeners();
   if (listeners_listing == nullptr) {
     throw std::runtime_error{"Listeners should exist."};

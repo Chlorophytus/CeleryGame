@@ -2,4 +2,4 @@
 CeleryGame: Just another game engine project.
 
 ## Requirements
-Requires Vulkan and SDL2.
+Requires a Vulkan 1.2 SDK and SDL2.

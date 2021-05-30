@@ -1,7 +1,7 @@
 # Minimum CMake version is 3.16
 cmake_minimum_required(VERSION 3.16)
 # We are at v0.4.0
-project(celerygame VERSION 0.4.0.7)
+project(celerygame VERSION 0.4.0.8)
 # Configure the project header(s)
 configure_file(include/${PROJECT_NAME}_cfg.in
 	${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}_cfg.hpp
@@ -14,6 +14,8 @@ find_package(Vulkan REQUIRED)
 find_package(Lua 5.4 REQUIRED)
 # Find pthread or other platform threading library
 find_package(Threads REQUIRED)
+# Find GLM
+find_package(glm REQUIRED)
 # Find Doxygen
 find_package(Doxygen)
 # Add target
@@ -41,5 +43,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	SDL2::SDL2
 	Vulkan::Vulkan
 	Threads::Threads
+	${GLM_LIBRARIES}
 	${LUA_LIBRARIES}
 )

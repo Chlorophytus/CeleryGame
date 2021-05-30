@@ -24,10 +24,13 @@
 #include <cstring>
 #include <ctime>
 #include <exception>
+#include <filesystem>
 #include <forward_list>
 #include <functional>
+#include <glm/glm.hpp>
 #include <initializer_list>
 #include <iomanip>
+#include <limits>
 #include <lua.hpp>
 #include <map>
 #include <memory>
