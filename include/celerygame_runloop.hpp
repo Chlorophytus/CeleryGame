@@ -44,4 +44,3 @@ tasks_t *const tasks();
 void deinit();
 } // namespace runloop
 } // namespace celerygame
-/* vim: set ts=2 sw=2 et: */

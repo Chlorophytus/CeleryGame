@@ -67,4 +67,3 @@ void runloop::deinit() {
   console::log(console::priority::notice, "Quitting run loop.\n");
   all_tasks = nullptr;
 }
-/* vim: set ts=2 sw=2 et: */

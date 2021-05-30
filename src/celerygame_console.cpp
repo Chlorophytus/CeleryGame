@@ -81,6 +81,13 @@ std::string common_prelude(console::priority p) {
   return formatter.str();
 }
 
+void console::log_namespace(std::string &&name,
+                            std::function<void(std::string &)> &&block) {
+  console::log(console::priority::debug, "entering '", name, "'\n");
+  block(name);
+  console::log(console::priority::debug, "exiting '", name, "'\n");
+}
+
 void console::terminal_listener::prelude(
     std::string &str /**< [in] string to log */,
     console::priority p /**< [in] the severity of the line to output */) {
@@ -117,4 +124,3 @@ void console::init() {
 }
 console::listeners_t *const console::listeners() { return all_listeners.get(); }
 void console::deinit() { all_listeners = nullptr; }
-/* vim: set ts=2 sw=2 et: */

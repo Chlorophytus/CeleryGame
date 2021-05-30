@@ -29,6 +29,9 @@ enum class priority : U8 {
   debug = 0x80          ///< Debug-level messages
 };
 
+/// Log within a namespace, a block of code
+void log_namespace(std::string &&, std::function<void(std::string &)> &&);
+
 /// Abstract base class for a console listener
 class listener {
 protected:
@@ -147,6 +150,7 @@ public:
 /// A listener that logs to a file
 class file_listener : public listener {
   FILE *_file;
+
 public:
   file_listener(std::filesystem::path &&);
   ~file_listener();
@@ -177,7 +181,7 @@ priority get_priority();
 template <class... Ts>
 void log(priority p /**< [in] The severity of the line to log */,
          Ts... more /**< [in] A parameter pack containing the line's parts */) {
-  if(static_cast<U8>(get_priority()) < static_cast<U8>(p)) {
+  if (static_cast<U8>(get_priority()) < static_cast<U8>(p)) {
     return;
   }
   auto listeners_listing = listeners();
@@ -190,4 +194,3 @@ void log(priority p /**< [in] The severity of the line to log */,
 }
 } // namespace console
 } // namespace celerygame
-/* vim: set ts=2 sw=2 et: */

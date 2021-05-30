@@ -17,12 +17,19 @@
 #include "../include/celerygame_cfg.hpp"
 #include "../include/celerygame_console.hpp"
 #include "../include/celerygame_runloop.hpp"
-#include "../include/celerygame_vulkan.hpp"
+#include "../include/celerygame_vulkan_getset.hpp"
+#include "../include/celerygame_vulkan_instance.hpp"
+#include "../include/celerygame_vulkan_utils.hpp"
+#include "../include/celerygame_vulkan_window.hpp"
+
+constexpr auto APP_NAME = "whatever";
+constexpr auto APP_VERS = VK_MAKE_API_VERSION(0, 0, 2, 0);
+
 int main(int argc, const char **argv) {
   SDL_Init(SDL_INIT_EVERYTHING);
   celerygame::console::init();
 
-  celerygame::console::set_priority(celerygame::console::priority::informational);
+  celerygame::console::set_priority(celerygame::console::priority::debug);
 
   celerygame::console::listeners()->emplace_back(
       new celerygame::console::terminal_listener{});
@@ -36,18 +43,12 @@ int main(int argc, const char **argv) {
   try {
     celerygame::runloop::init();
     celerygame::runloop::tasks()->emplace_front(new celerygame::runloop::task);
-    celerygame::vulkan::init("whatever", VK_MAKE_API_VERSION(0, 0, 1, 0), {},
-                             {}, 1280, 720, false, true);
-
-    // You must select a swap chain configuration for now.
-    auto config = celerygame::vulkan::device::swap_chain_config{};
-    config.format = VK_FORMAT_B8G8R8A8_SRGB;
-    config.color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    config.present_mode = VK_PRESENT_MODE_FIFO_KHR;
-    config.use_globally();
-
-    celerygame::vulkan::try_use_device(0, {VK_KHR_SWAPCHAIN_EXTENSION_NAME}, {},
-                                       true);
+    celerygame::vulkan::init();
+    celerygame::vulkan::window::init(
+        APP_NAME +
+            (" " + celerygame::vulkan::utils::stringify_version_info(APP_VERS)),
+        {1280, 720}, false);
+    celerygame::vulkan::instance::init(APP_NAME, APP_VERS, true, {}, {});
 
     while (celerygame::runloop::tick()) {
       SDL_Delay(10);
@@ -59,10 +60,11 @@ int main(int argc, const char **argv) {
                              "Fatal error: ", e.what(), "\n");
   }
 
+  celerygame::vulkan::instance::deinit();
+  celerygame::vulkan::window::deinit();
   celerygame::vulkan::deinit();
   celerygame::runloop::deinit();
   celerygame::console::deinit();
   SDL_Quit();
   return status;
 }
-/* vim: set ts=2 sw=2 et: */
