@@ -1,17 +1,18 @@
 # Minimum CMake version is 3.16
 cmake_minimum_required(VERSION 3.16)
 # We are at v0.4.0
-project(celerygame VERSION 0.4.0.9)
+project(celerygame VERSION 0.4.0.10)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # Configure the project header(s)
 configure_file(include/${PROJECT_NAME}_cfg.in
 	${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}_cfg.hpp
 )
 # Find SDL2 
-find_package(SDL2 REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 # Find Vulkan
 find_package(Vulkan REQUIRED)
-# Find Lua 5.4
-find_package(Lua 5.4 REQUIRED)
+# Find LuaJIT
+find_package(LuaJIT REQUIRED)
 # Find pthread or other platform threading library
 find_package(Threads REQUIRED)
 # Find GLM
@@ -22,6 +23,7 @@ find_package(Doxygen)
 add_executable(${PROJECT_NAME}
 	src/${PROJECT_NAME}_console.cpp
 	src/${PROJECT_NAME}_runloop.cpp
+	src/${PROJECT_NAME}_lua.cpp
 	src/${PROJECT_NAME}_vulkan_getset.cpp
 	src/${PROJECT_NAME}_vulkan_instance.cpp
 	src/${PROJECT_NAME}_vulkan_window.cpp
@@ -43,9 +45,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE include
 )
 # Time to link
 target_link_libraries(${PROJECT_NAME} PRIVATE
-	SDL2::SDL2
 	Vulkan::Vulkan
+	SDL2::SDL2main
+	SDL2::SDL2
 	Threads::Threads
 	${GLM_LIBRARIES}
-	${LUA_LIBRARIES}
+	${LUA_LIBRARY}
 )

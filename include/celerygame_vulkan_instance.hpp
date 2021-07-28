@@ -20,8 +20,10 @@
 namespace celerygame {
 namespace vulkan {
 namespace instance {
+/// Initialises the instance singleton
 void init(std::string &&, U32, bool, std::vector<const char *> &&,
           std::vector<const char *> &&);
+/// Destroys the instance singleton
 void deinit();
 } // namespace instance
 } // namespace vulkan

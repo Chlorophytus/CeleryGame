@@ -101,7 +101,7 @@ void console::terminal_listener::finalize(std::string &str) {
 console::file_listener::file_listener(
     std::filesystem::path
         &&file_path /**< [in] the path to the log file to write */)
-    : _file{std::fopen(file_path.c_str(), "w")} {
+    : _file{std::fopen(file_path.string().c_str(), "w")} {
   if (_file == nullptr) {
     throw std::runtime_error{"Couldn't open log file for write."};
   }

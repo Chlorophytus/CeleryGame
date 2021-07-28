@@ -1,4 +1,4 @@
-// Celerygame Vulkan window singleton
+// Celerygame include for Lua handling
 //
 // Copyright 2021 Roland Metivier <metivier.roland@chlorophyt.us>
 //
@@ -15,16 +15,18 @@
 // limitations under the License.
 #pragma once
 #include "celerygame.hpp"
-#include "celerygame_vulkan_getset.hpp"
-
+#include "celerygame_runloop.hpp"
 namespace celerygame {
-namespace vulkan {
-namespace window {
-/// Initializes the window singleton
-void init(std::string &&, VkExtent2D, bool);
+namespace lua {
+/// Initialises the Lua state with an init file
+void init(std::filesystem::path &&);
 
-/// Destroys the window singleton
+class scripted_task : public runloop::task {
+public:
+  void perform() override;
+};
+
+/// Destroys the Lua state
 void deinit();
-} // namespace window
-} // namespace vulkan
+} // namespace lua
 } // namespace celerygame

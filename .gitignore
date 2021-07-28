@@ -104,3 +104,4 @@ celerygame
 celerygame_cfg.hpp
 .vscode
 *.log
+build

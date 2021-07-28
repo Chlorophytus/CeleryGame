@@ -16,16 +16,14 @@
 #include "../include/celerygame.hpp"
 #include "../include/celerygame_cfg.hpp"
 #include "../include/celerygame_console.hpp"
+#include "../include/celerygame_lua.hpp"
 #include "../include/celerygame_runloop.hpp"
 #include "../include/celerygame_vulkan_getset.hpp"
 #include "../include/celerygame_vulkan_instance.hpp"
 #include "../include/celerygame_vulkan_utils.hpp"
 #include "../include/celerygame_vulkan_window.hpp"
 
-constexpr auto APP_NAME = "whatever";
-constexpr auto APP_VERS = VK_MAKE_API_VERSION(0, 0, 2, 0);
-
-int main(int argc, const char **argv) {
+int main(int argc, char **argv) {
   SDL_Init(SDL_INIT_EVERYTHING);
   celerygame::console::init();
 
@@ -42,13 +40,16 @@ int main(int argc, const char **argv) {
   auto status = EXIT_FAILURE;
   try {
     celerygame::runloop::init();
-    celerygame::runloop::tasks()->emplace_front(new celerygame::runloop::task);
-    celerygame::vulkan::init();
-    celerygame::vulkan::window::init(
-        APP_NAME +
-            (" " + celerygame::vulkan::utils::stringify_version_info(APP_VERS)),
-        {1280, 720}, false);
-    celerygame::vulkan::instance::init(APP_NAME, APP_VERS, true, {}, {});
+    celerygame::runloop::tasks()->emplace_front(
+        dynamic_cast<celerygame::runloop::task *>(
+            new celerygame::lua::scripted_task));
+    celerygame::lua::init(std::filesystem::path{"priv"} / "init.lua");
+    // celerygame::vulkan::init();
+    // celerygame::vulkan::window::init(
+    //     APP_NAME +
+    //         (" " + celerygame::vulkan::utils::stringify_version_info(APP_VERS)),
+    //     {1280, 720}, false);
+    // celerygame::vulkan::instance::init(APP_NAME, APP_VERS, true, {}, {});
 
     while (celerygame::runloop::tick()) {
       SDL_Delay(10);
@@ -60,9 +61,10 @@ int main(int argc, const char **argv) {
                              "Fatal error: ", e.what(), "\n");
   }
 
-  celerygame::vulkan::instance::deinit();
-  celerygame::vulkan::window::deinit();
-  celerygame::vulkan::deinit();
+  // celerygame::vulkan::instance::deinit();
+  // celerygame::vulkan::window::deinit();
+  // celerygame::vulkan::deinit();
+  celerygame::lua::deinit();
   celerygame::runloop::deinit();
   celerygame::console::deinit();
   SDL_Quit();

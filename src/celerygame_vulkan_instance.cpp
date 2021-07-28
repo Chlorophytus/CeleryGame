@@ -22,6 +22,7 @@ using namespace celerygame;
 static auto debug_messenger_ptr =
     std::unique_ptr<VkDebugUtilsMessengerEXT>{nullptr};
 
+/// The debug messenger callback for logging Vulkan information to stdout.
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
                VkDebugUtilsMessageTypeFlagsEXT type,

@@ -22,6 +22,7 @@ namespace vulkan {
 namespace utils {
 std::string stringify_version_info(U32);
 
+/// Helper for casting Vulkan function pointers from their names.
 template <class T> T procaddr_cast(const char *name) {
   auto pfn = reinterpret_cast<T>(vkGetInstanceProcAddr(*vulkan::instance::get(), name));
   if (pfn == nullptr) {

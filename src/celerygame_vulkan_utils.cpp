@@ -17,6 +17,7 @@
 #include "../include/celerygame_console.hpp"
 using namespace celerygame;
 
+/// Given a Vulkan version integer, convert to a semantic versioning identifier.
 std::string vulkan::utils::stringify_version_info(U32 version) {
   return std::string{"v"} + std::to_string(VK_API_VERSION_MAJOR(version)) +
          "." + std::to_string(VK_API_VERSION_MINOR(version)) + "." +
